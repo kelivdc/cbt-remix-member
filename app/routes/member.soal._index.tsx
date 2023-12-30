@@ -17,8 +17,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const session = await getSession(
         request.headers.get("Cookie")
     );
-    const jwt = session.get("jwt")
-    let url = `${process.env.SERVER}/soals?populate[pilihan_ganda][fields][0]=title`
+    const jwt = session.get("jwt");
+    let url = `${process.env.SERVER}/soals?populate[image][fields][1]=url&populate[pilihan_ganda][fields][0]=title`
     url += `&pagination[page]=1&pagination[pageSize]=1`
     const response = await fetch(url, {
         method: 'GET',
@@ -28,7 +28,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
         }
     })
     const result = await response.json()
-    return json(result)
+    const total = await result.data.length;
+    if (total <= 0) {
+        return redirect('/member/nosoal');
+    } else {
+        return json({result: result, url: process.env.PUBLIC})
+    }
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -53,12 +58,12 @@ export async function action({ request }: ActionFunctionArgs) {
             },
         })
     })
-    const pageCount = parseInt(formData.get("pageCount"))    
+    const pageCount = parseInt(formData.get("pageCount"))
     let page = parseInt(formData.get("page")) + 1
     if (page > pageCount) {
         return redirect('/member/thanks')
-      }
-    url = `${process.env.SERVER}/soals?populate[pilihan_ganda][fields][0]=title`
+    }
+    url = `${process.env.SERVER}/soals?populate[image][fields][1]=url&populate[pilihan_ganda][fields][0]=title`
     url += `&pagination[page]=${page}&pagination[pageSize]=1`
     const response = await fetch(url, {
         method: 'GET',
@@ -68,13 +73,14 @@ export async function action({ request }: ActionFunctionArgs) {
         }
     })
     const result = await response.json()
-    return json(result)
+    return json({result: result, url: process.env.PUBLIC})
 }
 
 export default function Soal() {
     const loader = useActionData() || useLoaderData<typeof loader>()
-    const data = loader.data[0]
-    const meta = loader.meta  
+    const data = loader.result.data[0]
+    const meta = loader.result.meta
+    const url = loader.url;
     const [count, setCount] = useState(data.attributes.waktu);
     const [disableForm, setDisableForm] = useState(false)
     const handleSelesai = () => {
@@ -86,6 +92,7 @@ export default function Soal() {
     useEffect(() => {
         if (!busy) {
             formRef.current?.reset()
+            setDisableForm(false)
             setCount(data.attributes.waktu)
         }
     }, [busy])
@@ -117,15 +124,18 @@ export default function Soal() {
                 <input type="hidden" name="page" value={meta.pagination.page} />
                 <input type="hidden" name="pageCount" value={meta.pagination.pageCount} />
                 <fieldset disabled={disableForm}>
-                <div className="mb-4">{meta.pagination.page}. {data.attributes.keterangan}</div>
-                <RadioGroup className="space-y-4">
-                    {data.attributes.pilihan_ganda.map((pilihan, idx) => (
-                        <div className="flex items-center space-x-2" key={idx}>
-                            <input type="radio" value={pilihan.id} name="pilihan_id" id={pilihan.id} />
-                            <Label htmlFor={pilihan.id}>{pilihan.title}</Label>
-                        </div>
-                    ))}
-                </RadioGroup>
+                    {data.attributes.image.data && (
+                        <img src={`${url}${data.attributes.image.data[0].attributes.url}`}  className="mb-4"/>
+                    )}
+                    <div className="mb-4 ">{meta.pagination.page}. {data.attributes.keterangan}</div>
+                    <RadioGroup className="space-y-4">
+                        {data.attributes.pilihan_ganda.map((pilihan, idx) => (
+                            <div className="flex items-center space-x-2" key={idx}>
+                                <input type="radio" value={pilihan.id} name="pilihan_id" id={pilihan.id} />
+                                <Label htmlFor={pilihan.id}>{pilihan.title}</Label>
+                            </div>
+                        ))}
+                    </RadioGroup>
                 </fieldset>
                 <div className="text-center">
                     <Button type="submit" disabled={busy}>

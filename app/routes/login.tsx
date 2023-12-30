@@ -25,11 +25,18 @@ export async function action({ request, }: ActionFunctionArgs) {
             password: password
         })
     });
-    const data = await response.json()
+    const data = await response.json()    
+
     if (response.status == 200) {       
-        const sessionData = { jwt: data.jwt, userId: data.user.id, username: data.user.username };
+        const sessionData = { 
+            jwt: data.jwt, 
+            userId: data.user.id, 
+            username: data.user.username, 
+            topik_id: null,
+            show_result: false
+        };
         const session = createSession(sessionData, "__session");
-        return redirect("/member", {
+        return redirect("/member/check", {
             headers: {
                 "Set-Cookie": await commitSession(session),
             },
