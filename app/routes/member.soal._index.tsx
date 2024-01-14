@@ -3,7 +3,8 @@ import { Form, useActionData, useLoaderData, useNavigation } from "@remix-run/re
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
-import { RadioGroup } from "~/components/ui/radio-group";
+import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { getSession } from "~/sessions";
 
 export const meta: MetaFunction = () => {
@@ -18,7 +19,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
         request.headers.get("Cookie")
     );
     const jwt = session.get("jwt");
-    let url = `${process.env.SERVER}/soals?populate[image][fields][1]=url&populate[pilihan_ganda][fields][0]=title`
+    const tipe_soal = session.get("tipe_soal");
+    let url = ''
+    if (tipe_soal == 'Ganda') {
+        url = `${process.env.SERVER}/soals?populate[image][fields][1]=url&populate[pilihan_ganda][fields][0]=title`
+    }
+    else if (tipe_soal == 'Multi') {
+        url = `${process.env.SERVER}/soals?populate[image][fields][1]=url&populate[multi_jawaban][fields][0]=hint`
+    }
     url += `&pagination[page]=1&pagination[pageSize]=1`
     const response = await fetch(url, {
         method: 'GET',
@@ -32,7 +40,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (total <= 0) {
         return redirect('/member/nosoal');
     } else {
-        return json({result: result, url: process.env.PUBLIC})
+        return json({ result: result, url: process.env.PUBLIC, tipe_soal: tipe_soal })
     }
 }
 
@@ -58,12 +66,19 @@ export async function action({ request }: ActionFunctionArgs) {
             },
         })
     })
-    const pageCount = parseInt(formData.get("pageCount"))
+    const pageCount = parseInt(formData.get("pageCount"));
+    const tipe_soal = session.get("tipe_soal");
+
     let page = parseInt(formData.get("page")) + 1
     if (page > pageCount) {
         return redirect('/member/thanks')
     }
-    url = `${process.env.SERVER}/soals?populate[image][fields][1]=url&populate[pilihan_ganda][fields][0]=title`
+    if (tipe_soal == 'Ganda') {
+        url = `${process.env.SERVER}/soals?populate[image][fields][1]=url&populate[pilihan_ganda][fields][0]=title`
+    }
+    else if (tipe_soal == 'Multi') {
+        url = `${process.env.SERVER}/soals?populate[image][fields][1]=url&populate[multi_jawaban][fields][0]=hint`
+    }
     url += `&pagination[page]=${page}&pagination[pageSize]=1`
     const response = await fetch(url, {
         method: 'GET',
@@ -73,11 +88,12 @@ export async function action({ request }: ActionFunctionArgs) {
         }
     })
     const result = await response.json()
-    return json({result: result, url: process.env.PUBLIC})
+    return json({ result: result, url: process.env.PUBLIC, tipe_soal: tipe_soal });
 }
 
 export default function Soal() {
     const loader = useActionData() || useLoaderData<typeof loader>()
+    const tipe_soal = loader.tipe_soal
     const data = loader.result.data[0]
     const meta = loader.result.meta
     const url = loader.url;
@@ -86,6 +102,8 @@ export default function Soal() {
     const handleSelesai = () => {
         setDisableForm(true)
     }
+    const [jawaban, setJawaban] = useState('')
+    
     const { state } = useNavigation()
     let busy = state === "submitting"
     let formRef = useRef();
@@ -111,6 +129,11 @@ export default function Soal() {
             }
         }, [count]);
     }
+    const abcd = ["A", "B", "C", "D", "E"];
+    const simpanJawaban = (event) => {
+        // console.log(data.id)
+        console.log(event.target.name + ' - ' + event.target.value);
+    }
     HitungMundur()
     return (
         <>
@@ -125,17 +148,76 @@ export default function Soal() {
                 <input type="hidden" name="pageCount" value={meta.pagination.pageCount} />
                 <fieldset disabled={disableForm}>
                     {data.attributes.image.data && (
-                        <img src={`${url}${data.attributes.image.data[0].attributes.url}`}  className="mb-4"/>
+                        <img src={`${url}${data.attributes.image.data[0].attributes.url}`} className="mb-4" />
                     )}
-                    <div className="mb-4 ">{meta.pagination.page}. {data.attributes.keterangan}</div>
-                    <RadioGroup className="space-y-4">
-                        {data.attributes.pilihan_ganda.map((pilihan, idx) => (
-                            <div className="flex items-center space-x-2" key={idx}>
-                                <input type="radio" value={pilihan.id} name="pilihan_id" id={pilihan.id} />
-                                <Label htmlFor={pilihan.id}>{pilihan.title}</Label>
+                    {tipe_soal == 'Ganda' ? (
+                        <>
+                            <div className="mb-4 ">{meta.pagination.page}. {data.attributes.keterangan}</div>
+                            <RadioGroup className="space-y-4">
+                                {data.attributes.pilihan_ganda.map((pilihan, idx) => (
+                                    <div className="flex items-center space-x-2" key={idx}>
+                                        <input type="radio" value={pilihan.id} name="pilihan_id" id={pilihan.id} />
+                                        <Label htmlFor={pilihan.id}>{pilihan.title}</Label>
+                                    </div>
+                                ))}
+                            </RadioGroup>
+                        </>
+                    ) : (
+                        <div>
+                            <Table style={{ width: "500px", border: "solid 1px #ccc" }}>
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell>{data.attributes.multi_bahan_1}</TableCell>
+                                        <TableCell>{data.attributes.multi_bahan_2}</TableCell>
+                                        <TableCell>{data.attributes.multi_bahan_3}</TableCell>
+                                        <TableCell>{data.attributes.multi_bahan_4}</TableCell>
+                                        <TableCell>{data.attributes.multi_bahan_5}</TableCell>
+                                    </TableRow>
+                                    <TableRow className="font-bold">
+                                        <TableCell>{data.attributes.multi_abjad_1}</TableCell>
+                                        <TableCell>{data.attributes.multi_abjad_2}</TableCell>
+                                        <TableCell>{data.attributes.multi_abjad_3}</TableCell>
+                                        <TableCell>{data.attributes.multi_abjad_4}</TableCell>
+                                        <TableCell>{data.attributes.multi_abjad_5}</TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
+                            <div className="my-4">
+                                {data.attributes.multi_perintah}
                             </div>
-                        ))}
-                    </RadioGroup>
+                            <div className="mt-4">
+                                {data.attributes.multi_jawaban.map((multi, idx) => (
+                                    <div className="flex" key={idx}>
+                                        <div>{idx + 1}. Soal:
+                                            <span className="pl-2 tracking-[8px]">{multi.hint}</span>
+                                        </div>
+                                        <RadioGroup className="flex space-x-4 pl-12" onChange={simpanJawaban}>
+                                            <div className="flex items-center space-x-2">
+                                                <input type="radio" value="1" name={multi.id} id="option-A" />
+                                                <Label htmlFor="option-A">A</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <input type="radio" value="2" name={multi.id} id="option-B" />
+                                                <Label htmlFor="option-B">B</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <input type="radio" value="3" name={multi.id} id="option-C" />
+                                                <Label htmlFor="option-C">C</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <input type="radio" value="4" name={multi.id} id="option-D" />
+                                                <Label htmlFor="option-D">D</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <input type="radio" value="5" name={multi.id} id="option-E" />
+                                                <Label htmlFor="option-E">E</Label>
+                                            </div>                                            
+                                        </RadioGroup>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}                    
                 </fieldset>
                 <div className="text-center">
                     <Button type="submit" disabled={busy}>

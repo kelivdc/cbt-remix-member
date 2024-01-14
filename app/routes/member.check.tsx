@@ -16,6 +16,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         });
         const data = await response.json();    
         session.set('topik_id', data?.Topik?.id);
+        session.set('tipe_soal', data?.Topik?.tipe_soal);
         session.set('show_result', data?.Topik?.show_result);
         return redirect("/member", {
             headers: {
