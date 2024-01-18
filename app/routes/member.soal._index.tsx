@@ -1,5 +1,5 @@
 import { ActionFunctionArgs, LoaderFunctionArgs, json, redirect } from "@remix-run/node";
-import { Form, useActionData, useLoaderData, useNavigation } from "@remix-run/react";
+import { Form, useActionData, useFetcher, useLoaderData, useNavigation } from "@remix-run/react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
@@ -40,7 +40,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (total <= 0) {
         return redirect('/member/nosoal');
     } else {
-        return json({ result: result, url: process.env.PUBLIC, tipe_soal: tipe_soal })
+        return json({ result: result, url: process.env.PUBLIC, tipe_soal: tipe_soal, jwt: jwt })
     }
 }
 
@@ -48,6 +48,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const session = await getSession(
         request.headers.get("Cookie")
     );
+
     const formData = await request.formData()
     const soal_id = formData.get("soal_id")
     const pilihan_id = formData.get("pilihan_id")
@@ -103,14 +104,15 @@ export default function Soal() {
         setDisableForm(true)
     }
     const [jawaban, setJawaban] = useState('')
-    
+
     const { state } = useNavigation()
     let busy = state === "submitting"
     let formRef = useRef();
     useEffect(() => {
         if (!busy) {
             formRef.current?.reset()
-            setDisableForm(false)
+            document.getElementById("MultiForm")?.reset();
+            setDisableForm(false);
             setCount(data.attributes.waktu)
         }
     }, [busy])
@@ -129,10 +131,27 @@ export default function Soal() {
             }
         }, [count]);
     }
-    const abcd = ["A", "B", "C", "D", "E"];
-    const simpanJawaban = (event) => {
-        // console.log(data.id)
-        console.log(event.target.name + ' - ' + event.target.value);
+    const action_url = url + '/api/user-jawabans/multi'
+
+    const simpanJawaban = async (event) => {
+        let multi_id = event.target.name;
+        let value = event.target.value;
+        let soal_id = event.target.getAttribute('data-soal-id');
+        const resp = await fetch(action_url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${loader.jwt}`
+            },
+            body: JSON.stringify({
+                data: {
+                    soal_id: soal_id,
+                    multi_id: multi_id,
+                    value: value,
+                },
+            })
+        })
+        const result = await resp.json();
     }
     HitungMundur()
     return (
@@ -142,16 +161,18 @@ export default function Soal() {
                     {new Date(count * 1000).toISOString().substring(14, 19)}
                 </span>
             </div>
-            <Form method="POST" replace ref={formRef}>
-                <input type="hidden" name="soal_id" value={data.id} />
-                <input type="hidden" name="page" value={meta.pagination.page} />
-                <input type="hidden" name="pageCount" value={meta.pagination.pageCount} />
-                <fieldset disabled={disableForm}>
-                    {data.attributes.image.data && (
-                        <img src={`${url}${data.attributes.image.data[0].attributes.url}`} className="mb-4" />
-                    )}
-                    {tipe_soal == 'Ganda' ? (
-                        <>
+            {tipe_soal == 'Ganda' ? (
+                <>
+                    <Form method="POST" replace ref={formRef}>
+                        <input type="hidden" name="soal_id" value={data.id} />
+                        <input type="hidden" name="page" value={meta.pagination.page} />
+                        <input type="hidden" name="pageCount" value={meta.pagination.pageCount} />
+                        <input type="hidden" name="form_name" value="Ganda" />
+                        <fieldset disabled={disableForm}>
+                            {data.attributes.image.data && (
+                                <img src={`${url}${data.attributes.image.data[0].attributes.url}`} className="mb-4" />
+                            )}
+
                             <div className="mb-4 ">{meta.pagination.page}. {data.attributes.keterangan}</div>
                             <RadioGroup className="space-y-4">
                                 {data.attributes.pilihan_ganda.map((pilihan, idx) => (
@@ -161,75 +182,98 @@ export default function Soal() {
                                     </div>
                                 ))}
                             </RadioGroup>
-                        </>
-                    ) : (
-                        <div>
-                            <Table style={{ width: "500px", border: "solid 1px #ccc" }}>
-                                <TableBody>
-                                    <TableRow>
-                                        <TableCell>{data.attributes.multi_bahan_1}</TableCell>
-                                        <TableCell>{data.attributes.multi_bahan_2}</TableCell>
-                                        <TableCell>{data.attributes.multi_bahan_3}</TableCell>
-                                        <TableCell>{data.attributes.multi_bahan_4}</TableCell>
-                                        <TableCell>{data.attributes.multi_bahan_5}</TableCell>
-                                    </TableRow>
-                                    <TableRow className="font-bold">
-                                        <TableCell>{data.attributes.multi_abjad_1}</TableCell>
-                                        <TableCell>{data.attributes.multi_abjad_2}</TableCell>
-                                        <TableCell>{data.attributes.multi_abjad_3}</TableCell>
-                                        <TableCell>{data.attributes.multi_abjad_4}</TableCell>
-                                        <TableCell>{data.attributes.multi_abjad_5}</TableCell>
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
-                            <div className="my-4">
-                                {data.attributes.multi_perintah}
-                            </div>
-                            <div className="mt-4">
+                        </fieldset >
+
+                        <div className="text-center">
+                            <Button type="submit" disabled={busy}>
+                                {busy ? "Wait..." :
+                                    <>
+                                        {meta.pagination.page < meta.pagination.pageCount ? "Next" : "Selesai"}
+                                    </>
+                                }
+                            </Button>
+                            {" "}({meta.pagination.page}/{meta.pagination.total})
+                        </div>
+                    </Form>
+                </>
+            ) : (
+                <div>
+                    <Table style={{ width: "500px", border: "solid 1px #ccc" }}>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell>{data.attributes.multi_bahan_1}</TableCell>
+                                <TableCell>{data.attributes.multi_bahan_2}</TableCell>
+                                <TableCell>{data.attributes.multi_bahan_3}</TableCell>
+                                <TableCell>{data.attributes.multi_bahan_4}</TableCell>
+                                <TableCell>{data.attributes.multi_bahan_5}</TableCell>
+                            </TableRow>
+                            <TableRow className="font-bold">
+                                <TableCell>{data.attributes.multi_abjad_1}</TableCell>
+                                <TableCell>{data.attributes.multi_abjad_2}</TableCell>
+                                <TableCell>{data.attributes.multi_abjad_3}</TableCell>
+                                <TableCell>{data.attributes.multi_abjad_4}</TableCell>
+                                <TableCell>{data.attributes.multi_abjad_5}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                    <div className="my-4">
+                        {data.attributes.multi_perintah}
+                    </div>
+                    <div className="space-y-2">
+                        <Form id="MultiForm">
+                            <fieldset disabled={disableForm}>
                                 {data.attributes.multi_jawaban.map((multi, idx) => (
                                     <div className="flex" key={idx}>
                                         <div>{idx + 1}. Soal:
                                             <span className="pl-2 tracking-[8px]">{multi.hint}</span>
                                         </div>
                                         <RadioGroup className="flex space-x-4 pl-12" onChange={simpanJawaban}>
-                                            <div className="flex items-center space-x-2">
-                                                <input type="radio" value="1" name={multi.id} id="option-A" />
-                                                <Label htmlFor="option-A">A</Label>
+                                            <div className="flex items-center space-x-1">
+                                                <input type="radio" value="1" name={multi.id} data-soal-id={data.id} id={`option-A-${multi.id}`} />
+                                                <Label htmlFor={`option-A-${multi.id}`}>A</Label>
                                             </div>
-                                            <div className="flex items-center space-x-2">
-                                                <input type="radio" value="2" name={multi.id} id="option-B" />
-                                                <Label htmlFor="option-B">B</Label>
+                                            <div className="flex items-center space-x-1">
+                                                <input type="radio" value="2" name={multi.id} data-soal-id={data.id} id={`option-B-${multi.id}`} />
+                                                <Label htmlFor={`option-B-${multi.id}`}>B</Label>
                                             </div>
-                                            <div className="flex items-center space-x-2">
-                                                <input type="radio" value="3" name={multi.id} id="option-C" />
-                                                <Label htmlFor="option-C">C</Label>
+                                            <div className="flex items-center space-x-1">
+                                                <input type="radio" value="3" name={multi.id} data-soal-id={data.id} id={`option-C-${multi.id}`} />
+                                                <Label htmlFor={`option-C-${multi.id}`}>C</Label>
                                             </div>
-                                            <div className="flex items-center space-x-2">
-                                                <input type="radio" value="4" name={multi.id} id="option-D" />
-                                                <Label htmlFor="option-D">D</Label>
+                                            <div className="flex items-center space-x-1">
+                                                <input type="radio" value="4" name={multi.id} data-soal-id={data.id} id={`option-D-${multi.id}`} />
+                                                <Label htmlFor={`option-D-${multi.id}`}>D</Label>
                                             </div>
-                                            <div className="flex items-center space-x-2">
-                                                <input type="radio" value="5" name={multi.id} id="option-E" />
-                                                <Label htmlFor="option-E">E</Label>
-                                            </div>                                            
+                                            <div className="flex items-center space-x-1">
+                                                <input type="radio" value="5" name={multi.id} data-soal-id={data.id} id={`option-E-${multi.id}`} />
+                                                <Label htmlFor={`option-E-${multi.id}`}>E</Label>
+                                            </div>
                                         </RadioGroup>
                                     </div>
                                 ))}
+                            </fieldset>
+
+                        </Form>
+                        <Form method="POST" replace ref={formRef}>
+                            <input type="hidden" name="soal_id" value={data.id} />
+                            <input type="hidden" name="page" value={meta.pagination.page} />
+                            <input type="hidden" name="pageCount" value={meta.pagination.pageCount} />
+                            <input type="hidden" name="form_name" value="Multi" />
+                            <div className="text-center">
+                                <Button type="submit" disabled={busy}>
+                                    {busy ? "Wait..." :
+                                        <>
+                                            {meta.pagination.page < meta.pagination.pageCount ? "Next" : "Selesai"}
+                                        </>
+                                    }
+                                </Button>
+                                {" "}({meta.pagination.page}/{meta.pagination.total})
                             </div>
-                        </div>
-                    )}                    
-                </fieldset>
-                <div className="text-center">
-                    <Button type="submit" disabled={busy}>
-                        {busy ? "Wait..." :
-                            <>
-                                {meta.pagination.page < meta.pagination.pageCount ? "Next" : "Selesai"}
-                            </>
-                        }
-                    </Button>
-                    {" "}({meta.pagination.page}/{meta.pagination.total})
+                        </Form>
+                    </div>
                 </div>
-            </Form>
+            )}
+
             Note:
             <p>Mohon halaman ini jangan direfresh/reload</p>
         </>

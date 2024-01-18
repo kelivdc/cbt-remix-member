@@ -12,9 +12,11 @@ export const meta: MetaFunction = () => {
 export default function Index() {
   const navigate = useNavigate()
   return (
-    <>
-    <h1>Welcome</h1>
-    <Button onClick={() => navigate('/login')}>Login</Button>
-    </>
+    <div className="h-screen grid place-items-center">
+      <div className="text-center">
+        <h1>Selamat Datang</h1>
+        <Button onClick={() => navigate('/login')} className="mt-4">Login</Button>
+      </div>
+    </div>
   );
 }
