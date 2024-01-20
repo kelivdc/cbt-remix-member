@@ -99,6 +99,7 @@ export default function Soal() {
     const meta = loader.result.meta
     const url = loader.url;
     const [count, setCount] = useState(data.attributes.waktu);
+    const [jwt, setJwt] = useState(loader.jwt)
     const [disableForm, setDisableForm] = useState(false)
     const handleSelesai = () => {
         setDisableForm(true)
@@ -141,7 +142,7 @@ export default function Soal() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${loader.jwt}`
+                'Authorization': `Bearer ${jwt}`
             },
             body: JSON.stringify({
                 data: {
