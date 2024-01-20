@@ -154,6 +154,7 @@ export default function Soal() {
         })
         const result = await resp.json();
     }
+    const [top, setTop] = useState<number>(100);
     HitungMundur()
     return (
         <>
@@ -198,29 +199,32 @@ export default function Soal() {
                     </Form>
                 </>
             ) : (
-                <div>
-                    <Table style={{ width: "500px", border: "solid 1px #ccc" }}>
-                        <TableBody>
-                            <TableRow>
-                                <TableCell>{data.attributes.multi_bahan_1}</TableCell>
-                                <TableCell>{data.attributes.multi_bahan_2}</TableCell>
-                                <TableCell>{data.attributes.multi_bahan_3}</TableCell>
-                                <TableCell>{data.attributes.multi_bahan_4}</TableCell>
-                                <TableCell>{data.attributes.multi_bahan_5}</TableCell>
-                            </TableRow>
-                            <TableRow className="font-bold">
-                                <TableCell>{data.attributes.multi_abjad_1}</TableCell>
-                                <TableCell>{data.attributes.multi_abjad_2}</TableCell>
-                                <TableCell>{data.attributes.multi_abjad_3}</TableCell>
-                                <TableCell>{data.attributes.multi_abjad_4}</TableCell>
-                                <TableCell>{data.attributes.multi_abjad_5}</TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                    <div className="my-4">
-                        {data.attributes.multi_perintah}
+                <div className="relative">
+                    <div className="fixed top-14 bg-white">
+                        <Table style={{ width: "500px", border: "solid 1px #ccc" }}>
+                            <TableBody>
+                                <TableRow>
+                                    <TableCell>{data.attributes.multi_bahan_1}</TableCell>
+                                    <TableCell>{data.attributes.multi_bahan_2}</TableCell>
+                                    <TableCell>{data.attributes.multi_bahan_3}</TableCell>
+                                    <TableCell>{data.attributes.multi_bahan_4}</TableCell>
+                                    <TableCell>{data.attributes.multi_bahan_5}</TableCell>
+                                </TableRow>
+                                <TableRow className="font-bold">
+                                    <TableCell>{data.attributes.multi_abjad_1}</TableCell>
+                                    <TableCell>{data.attributes.multi_abjad_2}</TableCell>
+                                    <TableCell>{data.attributes.multi_abjad_3}</TableCell>
+                                    <TableCell>{data.attributes.multi_abjad_4}</TableCell>
+                                    <TableCell>{data.attributes.multi_abjad_5}</TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+
+                        <div className="my-4">
+                            {data.attributes.multi_perintah}
+                        </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 mt-24">
                         <Form id="MultiForm">
                             <fieldset disabled={disableForm}>
                                 {data.attributes.multi_jawaban.map((multi, idx) => (
