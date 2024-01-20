@@ -158,10 +158,12 @@ export default function Soal() {
     HitungMundur()
     return (
         <>
-            <div className="text-right">
-                Sisa waktu <span className="border p-1 bg-slate-200">
-                    {new Date(count * 1000).toISOString().substring(14, 19)}
-                </span>
+            <div className="relative">
+                <div className="text-right fixed top-14 bg-white right-36">
+                    Sisa waktu <span className="border p-1 bg-slate-200">
+                        {new Date(count * 1000).toISOString().substring(14, 19)}
+                    </span>
+                </div>
             </div>
             {tipe_soal == 'Ganda' ? (
                 <>
