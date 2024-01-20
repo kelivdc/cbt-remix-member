@@ -27,7 +27,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     else if (tipe_soal == 'Multi') {
         url = `${process.env.SERVER}/soals?populate[image][fields][1]=url&populate[multi_jawaban][fields][0]=hint`
     }
-    url += `&pagination[page]=1&pagination[pageSize]=1`
+    url += `&pagination[page]=1&pagination[pageSize]=1&sort[0]=urutan`
     const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -80,7 +80,7 @@ export async function action({ request }: ActionFunctionArgs) {
     else if (tipe_soal == 'Multi') {
         url = `${process.env.SERVER}/soals?populate[image][fields][1]=url&populate[multi_jawaban][fields][0]=hint`
     }
-    url += `&pagination[page]=${page}&pagination[pageSize]=1`
+    url += `&pagination[page]=${page}&pagination[pageSize]=1&sort[0]=urutan`
     const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -226,7 +226,7 @@ export default function Soal() {
                             {data.attributes.multi_perintah}
                         </div>
                     </div>
-                    <div className="space-y-2 mt-24">
+                    <div className="space-y-2 mt-32">
                         <Form id="MultiForm">
                             <fieldset disabled={disableForm}>
                                 {data.attributes.multi_jawaban.map((multi, idx) => (
