@@ -174,7 +174,7 @@ export default function Soal() {
                         <input type="hidden" name="form_name" value="Ganda" />
                         <fieldset disabled={disableForm}>
                             {data.attributes.image.data && (
-                                <img src={`${url}${data.attributes.image.data[0].attributes.url}`} className="mb-4" />
+                                <img src={`${url}${data.attributes.image.data.attributes.url}`} className="mb-4" />
                             )}
 
                             <div className="mb-4 ">{meta.pagination.page}. {data.attributes.keterangan}</div>
