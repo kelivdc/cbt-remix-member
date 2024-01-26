@@ -173,7 +173,7 @@ export default function Soal() {
                         <input type="hidden" name="pageCount" value={meta.pagination.pageCount} />
                         <input type="hidden" name="form_name" value="Ganda" />
                         <fieldset disabled={disableForm}>
-                            {data.attributes.image.data && (
+                            {data.attributes.image.data.attributes.url && (
                                 <img src={`${url}${data.attributes.image.data.attributes.url}`} className="mb-4" />
                             )}
 
