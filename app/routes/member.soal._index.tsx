@@ -176,7 +176,6 @@ export default function Soal() {
                             {data.attributes.image?.data?.attributes?.url && (
                                 <img src={`${url}${data.attributes.image.data.attributes.url}`} className="mb-4" />
                             )}
-
                             <div className="mb-4 ">{meta.pagination.page}. {data.attributes.keterangan}</div>
                             <RadioGroup className="space-y-4">
                                 {data.attributes.pilihan_ganda.map((pilihan, idx) => (

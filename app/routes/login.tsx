@@ -28,11 +28,20 @@ export async function action({ request, }: ActionFunctionArgs) {
     const data = await response.json()    
 
     if (response.status == 200) {       
+        const topik = await fetch(`${process.env.SERVER}/users/me?populate=Topik`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${data.jwt}`
+            }
+          })
+          const hasil = await topik.json()
+          const topik_id = hasil.Topik?.id ?? null
         const sessionData = { 
             jwt: data.jwt, 
             userId: data.user.id, 
             username: data.user.username, 
-            topik_id: null,
+            topik_id: topik_id,
             show_result: false
         };
         const session = createSession(sessionData, "__session");

@@ -3,6 +3,7 @@ export default {
   ignoredRouteFiles: ["**/.*"],
   tailwind: true,
   postcss: true,
+  serverDependenciesToBundle: ["@strapi/client"], 
   // appDirectory: "app",
   // assetsBuildDirectory: "public/build",
   // publicPath: "/build/",
